@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">MobileDevRss</string>
+    <string name="str_roadWorks">https://trafficscotland.org/rss/feeds/roadworks.aspx</string>
+    <string name="str_incidents">https://trafficscotland.org/rss/feeds/currentincidents.aspx</string>
+    <string name="str_planned">https://trafficscotland.org/rss/feeds/plannedroadworks.aspx</string>
 </resources>

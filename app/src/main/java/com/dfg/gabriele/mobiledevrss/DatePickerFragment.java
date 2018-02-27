@@ -27,12 +27,16 @@ public class DatePickerFragment extends DialogFragment
     }
 
     public void onDateSet(DatePicker view, int year, int month, int day) {
+
+        if (((MainActivity)getActivity()) != null) {
+            ((MainActivity)getActivity()).SelectDate(day, month, year);
+        }
         // Do something with the date chosen by the user
         //TextView tv1= (TextView) getActivity().findViewById(R.id.textview1);
         //tv1.setText("Year: "+view.getYear()+" Month: "+view.getMonth()+" Day: "+view.getDayOfMonth());
 
         Context context = getActivity().getApplicationContext();
-        CharSequence text = "Year: "+view.getYear()+" Month: "+view.getMonth()+" Day: "+view.getDayOfMonth();
+        CharSequence text = "Year: "+year+" Month: "+month+" Day: "+day;
         int duration = Toast.LENGTH_SHORT;
 
         Toast toast = Toast.makeText(context, text, duration);

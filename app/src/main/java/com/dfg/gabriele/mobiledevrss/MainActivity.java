@@ -26,10 +26,20 @@ import java.util.regex.Pattern;
 public class MainActivity extends AppCompatActivity {
 
     //members
-    private TextView m_descriptionText;
-    private List<RssItem> m_items;
+    //start screen
     private ViewFlipper m_flipper;
+
+    //results lis
+    private List<RssItem> m_items;
     private ListView m_resultsView;
+    public boolean m_dateSelected = false;
+    public int m_selDay, m_selMonth, m_selYear;
+
+    //description screen
+    private TextView m_descriptionText;
+    private TextView m_startDateView;
+    private TextView m_endDateView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
         m_flipper = findViewById(R.id.ViewFlipper);
         m_resultsView = findViewById(R.id.ResultsListView);
         m_descriptionText = findViewById(R.id.DescriptionText);
+        m_startDateView = findViewById(R.id.StartDate);
+        m_endDateView = findViewById(R.id.EndDate);
 
         //display the item if it's clicked on
         m_resultsView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -51,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
                 RssItem selectedItem = m_items.get(position);
                 //set description, start and end date
                 m_descriptionText.setText(selectedItem.m_description);
+                m_startDateView.setText(selectedItem.m_startDate);
+                m_endDateView.setText(selectedItem.m_endDate);
 
                 //flip to the details view
                 m_flipper.setDisplayedChild(2);
@@ -73,6 +87,15 @@ public class MainActivity extends AppCompatActivity {
     {
         DialogFragment newFragment = new DatePickerFragment();
         newFragment.show(getSupportFragmentManager(), "datePicker");
+    }
+
+    public void SelectDate(int day, int month, int year)
+    {
+        m_dateSelected = true;
+        m_selDay = day;
+        m_selMonth = month;
+        m_selYear = year;
+        new FeedGetter().execute((Void) null);
     }
 
 //nested class to fetch the rss feed
@@ -125,16 +148,38 @@ public class MainActivity extends AppCompatActivity {
 
         m_items = result;
 
-        //create the text for each title
-        String[] titles = new String[m_items.size()];
-        for (int i = 0; i < m_items.size(); i++)
+        //check if a date has been selected and proceed accordingly
+        if (m_dateSelected)
         {
-            titles[i] = m_items.get(i).m_title;
-        }
+            List<RssItem> relevantItems = new ArrayList<>();
+            for (RssItem item : m_items)
+            {
+                if (item.IsWithin(m_selDay, m_selMonth, m_selYear))
+                    relevantItems.add(item);
+            }
+            //create the text for each title
+            String[] titles = new String[relevantItems.size()];
+            for (int i = 0; i < relevantItems.size(); i++) {
+                titles[i] = relevantItems.get(i).m_title;
+            }
 
-        //fill up list view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
-        ArrayAdapter adapter = new ArrayAdapter<>(getBaseContext(), android.R.layout.simple_list_item_1, titles);
-        m_resultsView.setAdapter(adapter);
+            //fill up list view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
+            ArrayAdapter adapter = new ArrayAdapter<>(getBaseContext(), android.R.layout.simple_list_item_1, titles);
+            m_resultsView.setAdapter(adapter);
+
+        }
+        else //we don't have any specific date, fetch everything
+        {
+            //create the text for each title
+            String[] titles = new String[m_items.size()];
+            for (int i = 0; i < m_items.size(); i++) {
+                titles[i] = m_items.get(i).m_title;
+            }
+
+            //fill up list view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
+            ArrayAdapter adapter = new ArrayAdapter<>(getBaseContext(), android.R.layout.simple_list_item_1, titles);
+            m_resultsView.setAdapter(adapter);
+        }
     }
 }
 }

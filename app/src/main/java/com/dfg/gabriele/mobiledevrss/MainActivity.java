@@ -1,11 +1,16 @@
 package com.dfg.gabriele.mobiledevrss;
 
 import android.os.AsyncTask;
+import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.ViewFlipper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,22 +26,53 @@ import java.util.regex.Pattern;
 public class MainActivity extends AppCompatActivity {
 
     //members
-    TextView m_text;
-    List<RssItem> m_items;
+    private TextView m_descriptionText;
+    private List<RssItem> m_items;
+    private ViewFlipper m_flipper;
+    private ListView m_resultsView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        m_text = findViewById(R.id.textView);
         m_items = new ArrayList<>();
 
+        //cache all views
+        m_flipper = findViewById(R.id.ViewFlipper);
+        m_resultsView = findViewById(R.id.ResultsListView);
+        m_descriptionText = findViewById(R.id.DescriptionText);
+
+        //display the item if it's clicked on
+        m_resultsView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //get item based on selection
+                RssItem selectedItem = m_items.get(position);
+                //set description, start and end date
+                m_descriptionText.setText(selectedItem.m_description);
+
+                //flip to the details view
+                m_flipper.setDisplayedChild(2);
+            }
+        });
     }
+
 
     public void FetchDataButtonPressed(View view)
     {
         new FeedGetter().execute((Void) null);
+    }
+
+    public void BackFromDetailsPressed(View view)
+    {
+        m_flipper.setDisplayedChild(1);
+    }
+
+    public void ShowDatePickerDialog(View view)
+    {
+        DialogFragment newFragment = new DatePickerFragment();
+        newFragment.show(getSupportFragmentManager(), "datePicker");
     }
 
 //nested class to fetch the rss feed
@@ -80,6 +116,25 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return null;
+    }
+
+    @Override
+    protected void onPostExecute(List<RssItem> result)
+    {
+        m_flipper.setDisplayedChild(1);
+
+        m_items = result;
+
+        //create the text for each title
+        String[] titles = new String[m_items.size()];
+        for (int i = 0; i < m_items.size(); i++)
+        {
+            titles[i] = m_items.get(i).m_title;
+        }
+
+        //fill up list view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
+        ArrayAdapter adapter = new ArrayAdapter<>(getBaseContext(), android.R.layout.simple_list_item_1, titles);
+        m_resultsView.setAdapter(adapter);
     }
 }
 }

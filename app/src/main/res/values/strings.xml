@@ -3,4 +3,7 @@
     <string name="str_roadWorks">https://trafficscotland.org/rss/feeds/roadworks.aspx</string>
     <string name="str_incidents">https://trafficscotland.org/rss/feeds/currentincidents.aspx</string>
     <string name="str_planned">https://trafficscotland.org/rss/feeds/plannedroadworks.aspx</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

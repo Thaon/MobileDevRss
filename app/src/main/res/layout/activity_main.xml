@@ -14,6 +14,7 @@
         tools:layout_editor_absoluteY="8dp">
 
         <android.support.constraint.ConstraintLayout
+            android:id="@+id/MainMenu"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             tools:layout_editor_absoluteX="8dp"
@@ -21,11 +22,13 @@
 
             <Button
                 android:id="@+id/DateButton"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
                 android:layout_marginLeft="8dp"
                 android:layout_marginRight="8dp"
+                android:layout_marginStart="8dp"
                 android:onClick="ShowDatePickerDialog"
                 android:text="Pick Date"
                 app:layout_constraintBottom_toTopOf="@+id/FetchDataBtn"
@@ -50,6 +53,27 @@
 
         </android.support.constraint.ConstraintLayout>
 
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/ProgressBarView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_marginTop="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp" />
+        </android.support.constraint.ConstraintLayout>
+
         <ListView
             android:id="@+id/ResultsListView"
             android:layout_width="match_parent"
@@ -66,10 +90,12 @@
 
             <EditText
                 android:id="@+id/DescriptionText"
-                android:layout_width="match_parent"
-                android:layout_height="314dp"
+                android:layout_width="0dp"
+                android:layout_height="90dp"
+                android:layout_marginEnd="8dp"
                 android:layout_marginLeft="8dp"
                 android:layout_marginRight="8dp"
+                android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
                 android:ems="10"
                 android:inputType="textMultiLine"
@@ -80,9 +106,10 @@
 
             <EditText
                 android:id="@+id/StartDate"
-                android:layout_width="168dp"
-                android:layout_height="0dp"
+                android:layout_width="182dp"
+                android:layout_height="42dp"
                 android:layout_marginLeft="16dp"
+                android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
                 android:ems="10"
                 android:inputType="date"
@@ -91,11 +118,13 @@
 
             <EditText
                 android:id="@+id/EndDate"
-                android:layout_width="169dp"
-                android:layout_height="0dp"
+                android:layout_width="0dp"
+                android:layout_height="41dp"
+                android:layout_marginEnd="8dp"
                 android:layout_marginLeft="8dp"
                 android:layout_marginRight="8dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="9dp"
                 android:ems="10"
                 android:inputType="date"
                 app:layout_constraintHorizontal_bias="0.0"
@@ -108,6 +137,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
                 android:layout_marginRight="8dp"
                 android:onClick="BackFromDetailsPressed"
                 app:layout_constraintBottom_toBottomOf="parent"

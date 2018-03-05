@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
                 m_endDateView.setText(selectedItem.m_endDate);
 
                 //flip to the details view
-                m_flipper.setDisplayedChild(2);
+                m_flipper.setDisplayedChild(3); //details view
             }
         });
     }
@@ -75,12 +75,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void FetchDataButtonPressed(View view)
     {
+        m_flipper.setDisplayedChild(1); //progress bar
         new FeedGetter().execute((Void) null);
     }
 
     public void BackFromDetailsPressed(View view)
     {
-        m_flipper.setDisplayedChild(1);
+        m_flipper.setDisplayedChild(2); //list view
     }
 
     public void ShowDatePickerDialog(View view)
@@ -95,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
         m_selDay = day;
         m_selMonth = month;
         m_selYear = year;
+        m_flipper.setDisplayedChild(1); //progress bar
         new FeedGetter().execute((Void) null);
     }
 
@@ -144,42 +146,38 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPostExecute(List<RssItem> result)
     {
-        m_flipper.setDisplayedChild(1);
-
+        m_flipper.setDisplayedChild(2); //list view
         m_items = result;
+        List<RssItem> relevantItems = new ArrayList<>();
+
+        //calculate the biggest duration for the works
+        int maxDuration = 0;
+        for (RssItem itm : m_items)
+        {
+            if (itm.GetDurationInDays() > maxDuration)
+            {
+                maxDuration = itm.GetDurationInDays();
+            }
+        }
 
         //check if a date has been selected and proceed accordingly
         if (m_dateSelected)
         {
-            List<RssItem> relevantItems = new ArrayList<>();
             for (RssItem item : m_items)
             {
                 if (item.IsWithin(m_selDay, m_selMonth, m_selYear))
                     relevantItems.add(item);
             }
-            //create the text for each title
-            String[] titles = new String[relevantItems.size()];
-            for (int i = 0; i < relevantItems.size(); i++) {
-                titles[i] = relevantItems.get(i).m_title;
-            }
-
-            //fill up list view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
-            ArrayAdapter adapter = new ArrayAdapter<>(getBaseContext(), android.R.layout.simple_list_item_1, titles);
-            m_resultsView.setAdapter(adapter);
 
         }
         else //we don't have any specific date, fetch everything
         {
-            //create the text for each title
-            String[] titles = new String[m_items.size()];
-            for (int i = 0; i < m_items.size(); i++) {
-                titles[i] = m_items.get(i).m_title;
-            }
-
-            //fill up list view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
-            ArrayAdapter adapter = new ArrayAdapter<>(getBaseContext(), android.R.layout.simple_list_item_1, titles);
-            m_resultsView.setAdapter(adapter);
+            relevantItems = m_items;
         }
+
+        //fill up results view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
+        RssItemAdapter adapter = new RssItemAdapter(getBaseContext(), relevantItems, maxDuration);
+        m_resultsView.setAdapter(adapter);
     }
 }
 }

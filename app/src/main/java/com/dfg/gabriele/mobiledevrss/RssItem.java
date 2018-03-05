@@ -102,4 +102,19 @@ public class RssItem {
 
         return false;
     }
+
+    public int GetDurationInDays()
+    {
+        int days = (m_eYear - m_sYear) * 365;
+        int months = 0;
+        if (m_sMonth > m_eMonth)
+            months += 12;
+        months += m_eMonth - m_sMonth;
+        days += months * 30; //we average the amount of days each month has to 30 as an approximation is ok for us
+        if (m_sDay > m_eDay)
+            days += 30;
+        days += m_eDay - m_sDay;
+
+        return days;
+    }
 }

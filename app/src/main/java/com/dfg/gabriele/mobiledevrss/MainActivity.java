@@ -1,3 +1,5 @@
+//by Gabriele Maddaloni S1436255
+
 package com.dfg.gabriele.mobiledevrss;
 
 import android.os.AsyncTask;
@@ -9,6 +11,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 
@@ -28,8 +31,10 @@ public class MainActivity extends AppCompatActivity {
     //members
     //start screen
     private ViewFlipper m_flipper;
+    private Spinner m_rssSelector;
 
     //results lis
+    private String m_selectedRssFeed;
     private List<RssItem> m_items;
     private ListView m_resultsView;
     public boolean m_dateSelected = false;
@@ -54,6 +59,30 @@ public class MainActivity extends AppCompatActivity {
         m_descriptionText = findViewById(R.id.DescriptionText);
         m_startDateView = findViewById(R.id.StartDate);
         m_endDateView = findViewById(R.id.EndDate);
+        m_rssSelector = findViewById(R.id.RssSelector);
+
+        //fill in the Rss Selector spinner and add on click adapter
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.SpinnerStrings, android.R.layout.simple_spinner_item);
+        m_rssSelector.setAdapter(adapter);
+
+        m_rssSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
+            @Override
+            public void onItemSelected(AdapterView<?> arg0, View arg1,
+                                       int pos, long arg3) {
+                if (pos == 0)
+                    m_selectedRssFeed = getResources().getString(R.string.str_planned);
+                else
+                    m_selectedRssFeed = getResources().getString(R.string.str_incidents);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> arg0) {
+                // TODO Auto-generated method stub
+
+            }
+
+        });
 
         //display the item if it's clicked on
         m_resultsView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -76,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
     public void FetchDataButtonPressed(View view)
     {
         m_flipper.setDisplayedChild(1); //progress bar
+
         new FeedGetter().execute((Void) null);
     }
 
@@ -100,6 +130,31 @@ public class MainActivity extends AppCompatActivity {
         new FeedGetter().execute((Void) null);
     }
 
+    //take care of the back functionality
+    @Override
+    public void onBackPressed() {
+        int displayedPage = m_flipper.getDisplayedChild();
+
+        switch (displayedPage)
+        {
+            case 1:
+                //we are in the loading bar screen, do nothing
+                break;
+
+            case 2: //back from the list view
+                m_flipper.setDisplayedChild(0); //go back to menu
+                break;
+
+            case 3: //back from the details view
+                m_flipper.setDisplayedChild(2); //go back to list view
+                break;
+
+            default: //in any other case we just close the application
+                super.onBackPressed();
+                break;
+        }
+    }
+
 //nested class to fetch the rss feed
     //passing to, progress value, return value
     private class FeedGetter extends AsyncTask<Void, Void, List<RssItem>> {
@@ -109,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
         try
         {
             //get the connection going
-            URL url = new URL(getResources().getString(R.string.str_roadWorks));
+            URL url = new URL(m_selectedRssFeed);
             URLConnection conn = url.openConnection();
             InputStream is = conn.getInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(is));

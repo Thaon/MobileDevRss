@@ -1,3 +1,5 @@
+//by Gabriele Maddaloni S1436255
+
 package com.dfg.gabriele.mobiledevrss;
 
 import android.util.Log;

@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">MobileDevRss</string>
-    <string name="str_roadWorks">https://trafficscotland.org/rss/feeds/roadworks.aspx</string>
     <string name="str_incidents">https://trafficscotland.org/rss/feeds/currentincidents.aspx</string>
     <string name="str_planned">https://trafficscotland.org/rss/feeds/plannedroadworks.aspx</string>
     <string name="str_roadWorksImg">https://cdn0.iconfinder.com/data/icons/trade-1-2/48/42-512.png</string>
@@ -9,6 +8,8 @@
     <string name="str_yellowDot">http://www.pvhc.net/img220/wfklxtlvqgbfrirgzayu.png</string>
     <string name="str_redDot">http://www.clker.com/cliparts/Q/l/D/8/k/m/red-circle-icon-hi.png</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string-array name="SpinnerStrings">
+        <item>Planned Roadworks</item>
+        <item>Incidents</item>
+    </string-array>
 </resources>

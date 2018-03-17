@@ -4,19 +4,25 @@ package com.dfg.gabriele.mobiledevrss;
 
 import android.util.Log;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 public class RssItem {
     public enum WorkType {RoadWork, Planned, Incident};
 
     //members
     public String m_title, m_description, m_publishedDate, m_startDate, m_endDate;
-    public int m_sDay, m_sMonth, m_sYear, m_eDay, m_eMonth, m_eYear;
+    public Date m_startingDate, m_endingDate;
     public WorkType m_type;
 
     //methods
-    public RssItem(String data)
+    public RssItem(String data, WorkType type)
     {
         String regex = "<title>(.*?)</title>";
         Pattern pt = Pattern.compile(regex);
@@ -24,99 +30,108 @@ public class RssItem {
         if (matches.find())
             m_title = matches.group(1);
 
+        //let's extrapolate the description
         regex = "<description>(.*?)</description>";
         pt = Pattern.compile(regex);
         matches = pt.matcher(data);
+
         if (matches.find())
         {
-            //extract dates and info
-            String fullDes = matches.group(1);
-            String[] sections = fullDes.split("&lt;br /&gt;");
-
-            //dates: start date
-            regex = ", (.*?) -"; //just after the day
-            pt = Pattern.compile(regex);
-            matches = pt.matcher(sections[0]); //start date
-            if (matches.find())
+            //we now differentiate between incidents and planned road works
+            if (type == WorkType.Incident)
             {
-                m_startDate = matches.group(1);
-                //get the actual date values
-                String[] dateValues = m_startDate.split(" ");
-                m_sDay = Integer.valueOf(dateValues[0]);
-                m_sMonth = GetMonthFromString(dateValues[1]);
-                m_sYear = Integer.valueOf(dateValues[2]);
-            }
+                m_description = matches.group(1);
 
-            //dates: end date, we use the same regex on a different string
-            matches = pt.matcher(sections[1]); //end date
-            if (matches.find())
-            {
-                m_endDate = matches.group(1);
-                //get the actual date values
-                String[] dateValues = m_endDate.split(" ");
-                m_eDay = Integer.valueOf(dateValues[0]);
-                m_eMonth = GetMonthFromString(dateValues[1]);
-                m_eYear = Integer.valueOf(dateValues[2]);
-            }
+                //now get the date
+                regex = "<pubDate>(.*?)</pubDate>";
+                pt = Pattern.compile(regex);
+                matches = pt.matcher(data);
 
-            //description is just the last section
-            if (sections.length > 2)
-                m_description = sections[2];
+                if (matches.find())
+                {
+                    //remove the GMT
+                    regex = "(.*?) GMT";
+                    pt = Pattern.compile(regex);
+                    matches = pt.matcher(data);
+
+                    if (matches.find())
+                    {
+                        //parse into date
+                        String dateFormat = "EEE, d MMM yyyy HH:mm:ss"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
+                        SimpleDateFormat format  = new SimpleDateFormat(dateFormat, Locale.UK);
+                        try {
+                            m_startingDate = format.parse(matches.group(1));
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
             else
-                m_description = "No other details available.";
+            {
+                //extract dates and info
+                String fullDes = matches.group(1);
+                String[] sections = fullDes.split("&lt;br /&gt;");
+
+                //dates: start date
+                regex = "Start Date: (.*?)";
+                pt = Pattern.compile(regex);
+                matches = pt.matcher(sections[0]); //start date
+                if (matches.find()) {
+                    m_startDate = matches.group(1);
+                    //get the actual date values
+                    String dateFormat = "EEE, dd MMMMM yyyy - HH:mm"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
+                    SimpleDateFormat format  = new SimpleDateFormat(dateFormat, Locale.UK);
+                    try {
+                        m_startingDate = format.parse(m_startDate); //get the date from the string
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                //dates: end date
+                regex = "End Date: (.*?)";
+                pt = Pattern.compile(regex);
+                matches = pt.matcher(sections[1]); //end date
+                if (matches.find()) {
+                    m_endDate = matches.group(1);
+                    //get the actual date values
+                    String dateFormat = "EEE, dd MMMMM yyyy - HH:mm"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
+                    SimpleDateFormat format  = new SimpleDateFormat(dateFormat, Locale.UK);
+                    try {
+                        m_endingDate = format.parse(m_endDate); //get the date from the string
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                //description is just the last section
+                if (sections.length > 2)
+                    m_description = sections[2];
+                else
+                    m_description = "No other details available.";
+
+            }
         }
-    }
-
-    private String GetMonthFromInt(int monthID)
-    {
-        String[] months = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
-        return months[monthID];
-    }
-
-    private int GetMonthFromString(String month)
-    {
-        String[] months = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
-        //Log.e("Month checking:", month);
-
-        //remove unwanted spaces
-        month = month.trim();
-
-        for (int i = 0; i < months.length; i++)
-        {
-            if (months[i].equals(month))
-                return i;
-        }
-        return -1; //fail state
     }
 
     public boolean IsWithin(int day, int month, int year)
     {
-        //Log.e("Date", "Date: " + day + ", " + month + ", " + year + " checked against: " + m_sDay + ", "+ m_sMonth + ", "+ m_sYear + ", ending at: "+ m_eDay + ", "+ m_eMonth + ", "+ m_eYear);
-        if (year > m_sYear && year <= m_eYear) //only check for the end date in this case
-            if (m_eMonth >= month)
-                if (m_sDay <= day && m_eDay >= day)
-                    return true;
+        //create date from data
+        Date date = new GregorianCalendar(year, month, day).getTime();
 
-        if (year >= m_sYear && year <= m_eYear)
-            if (m_sMonth <= month && m_eMonth >= month)
-                if (m_sDay <= day && m_eDay >= day)
-                    return true;
-
-        return false;
+        return (date.before(m_endingDate) && date.after(m_startingDate));
     }
 
     public int GetDurationInDays()
     {
-        int days = (m_eYear - m_sYear) * 365;
-        int months = 0;
-        if (m_sMonth > m_eMonth)
-            months += 12;
-        months += m_eMonth - m_sMonth;
-        days += months * 30; //we average the amount of days each month has to 30 as an approximation is ok for us
-        if (m_sDay > m_eDay)
-            days += 30;
-        days += m_eDay - m_sDay;
+        return daysBetween(m_startingDate, m_endingDate);
+    }
 
-        return days;
+    public int daysBetween(Date d1, Date d2) //from: https://stackoverflow.com/questions/7103064/java-calculate-the-number-of-days-between-two-dates
+    {
+        if (d1 != null && d2 != null)
+            return (int)( (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+        return -1;
     }
 }

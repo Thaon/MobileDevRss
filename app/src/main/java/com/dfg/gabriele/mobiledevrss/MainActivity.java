@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     //start screen
     private ViewFlipper m_flipper;
     private Spinner m_rssSelector;
+    private RssItem.WorkType m_selectedFeed;
 
     //results lis
     private String m_selectedRssFeed;
@@ -71,9 +72,15 @@ public class MainActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> arg0, View arg1,
                                        int pos, long arg3) {
                 if (pos == 0)
+                {
                     m_selectedRssFeed = getResources().getString(R.string.str_planned);
+                    m_selectedFeed = RssItem.WorkType.Planned;
+                }
                 else
+                {
                     m_selectedRssFeed = getResources().getString(R.string.str_incidents);
+                    m_selectedFeed = RssItem.WorkType.Incident;
+                }
             }
 
             @Override
@@ -107,11 +114,6 @@ public class MainActivity extends AppCompatActivity {
         m_flipper.setDisplayedChild(1); //progress bar
 
         new FeedGetter().execute((Void) null);
-    }
-
-    public void BackFromDetailsPressed(View view)
-    {
-        m_flipper.setDisplayedChild(2); //list view
     }
 
     public void ShowDatePickerDialog(View view)
@@ -186,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
             List<RssItem> items = new ArrayList<>();
             while (matches.find())
             {
-                items.add(new RssItem(matches.group(1))); //using 1 as 0 is the parent tag
+                items.add(new RssItem(matches.group(1), m_selectedFeed)); //using 1 as 0 is the parent tag
             }
             return items;
         }

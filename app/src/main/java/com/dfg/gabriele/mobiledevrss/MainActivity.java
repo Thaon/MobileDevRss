@@ -62,6 +62,10 @@ public class MainActivity extends AppCompatActivity {
         m_endDateView = findViewById(R.id.EndDate);
         m_rssSelector = findViewById(R.id.RssSelector);
 
+        //start the app by selecting the planned roadworks
+        m_selectedRssFeed = getResources().getString(R.string.str_planned);
+        m_selectedFeed = RssItem.WorkType.Planned;
+
         //fill in the Rss Selector spinner and add on click adapter
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.SpinnerStrings, android.R.layout.simple_spinner_item);
         m_rssSelector.setAdapter(adapter);
@@ -75,18 +79,21 @@ public class MainActivity extends AppCompatActivity {
                 {
                     m_selectedRssFeed = getResources().getString(R.string.str_planned);
                     m_selectedFeed = RssItem.WorkType.Planned;
+                    //reset the end date label state
+                    findViewById(R.id.EndDateLabel).setEnabled(true);
                 }
                 else
                 {
                     m_selectedRssFeed = getResources().getString(R.string.str_incidents);
                     m_selectedFeed = RssItem.WorkType.Incident;
+                    //disable the end date as incidents don't have one
+                    findViewById(R.id.EndDateLabel).setEnabled(false);
                 }
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {
-                // TODO Auto-generated method stub
-
+                //well... nothing happens...
             }
 
         });
@@ -207,13 +214,14 @@ public class MainActivity extends AppCompatActivity {
         m_items = result;
         List<RssItem> relevantItems = new ArrayList<>();
 
-        //calculate the biggest duration for the works
-        int maxDuration = 0;
-        for (RssItem itm : m_items)
+        int maxDuration = -1;
+        if (m_selectedFeed == RssItem.WorkType.Planned) //only calculate duration for planned roadworks
         {
-            if (itm.GetDurationInDays() > maxDuration)
-            {
-                maxDuration = itm.GetDurationInDays();
+            //calculate the biggest duration for the works
+            for (RssItem itm : m_items) {
+                if (itm.GetDurationInDays() > maxDuration) {
+                    maxDuration = itm.GetDurationInDays();
+                }
             }
         }
 
@@ -233,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //fill up results view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
-        RssItemAdapter adapter = new RssItemAdapter(getBaseContext(), relevantItems, maxDuration);
+        RssItemAdapter adapter = new RssItemAdapter(getBaseContext(), relevantItems, maxDuration); //check if are processing incidents, in that case pass -1 to the adapter
         m_resultsView.setAdapter(adapter);
     }
 }

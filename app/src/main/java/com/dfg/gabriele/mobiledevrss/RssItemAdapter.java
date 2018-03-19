@@ -4,6 +4,7 @@ package com.dfg.gabriele.mobiledevrss;
 
 import android.content.Context;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,11 +25,14 @@ public class RssItemAdapter extends BaseAdapter {
     private List<RssItem> m_items;
 
     private int m_maxDuration;
+    private boolean m_isIncident = false;
 
     public RssItemAdapter(Context context, List<RssItem> items, int maxDuration) {
         m_context = context;
         m_items = items;
         m_maxDuration = maxDuration;
+        m_isIncident = m_maxDuration == -1;
+        Log.e("Max Duration", String.valueOf(m_maxDuration));
         m_inflater = (LayoutInflater) m_context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
@@ -60,27 +64,23 @@ public class RssItemAdapter extends BaseAdapter {
         RssItem item = (RssItem) getItem(i);
         title.setText(item.m_title);
 
-        //using the Picasso image library to load images on the background, this will not freeze the UI thread
-        Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_roadWorksImg)).placeholder(R.mipmap.ic_launcher).into(icon);
+        if (m_isIncident) {
+            //using the Picasso image library to load images on the background, this will not freeze the UI thread
+            Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_roadWorksImg)).placeholder(R.mipmap.ic_launcher).into(icon);
 
-        //switch between severities, we first normalise the periods and then assign an icon to the item based on duration
-        int duration = item.GetDurationInDays();
-        if (duration < m_maxDuration / 3)
-        {
-            //duration is short, let's use the green dot
-            Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_greenDot)).placeholder(R.mipmap.ic_launcher).into(severity);
+            //switch between severities, we first normalise the periods and then assign an icon to the item based on duration
+            int duration = item.GetDurationInDays();
+            if (duration < m_maxDuration / 3) {
+                //duration is short, let's use the green dot
+                Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_greenDot)).placeholder(R.mipmap.ic_launcher).into(severity);
+            } else if (duration >= m_maxDuration / 3 && duration < (m_maxDuration / 3) * 2) {
+                //medium duration, yellow dot
+                Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_yellowDot)).placeholder(R.mipmap.ic_launcher).into(severity);
+            } else {
+                //long duration, red dot here
+                Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_redDot)).placeholder(R.mipmap.ic_launcher).into(severity);
+            }
         }
-        else if (duration >= m_maxDuration / 3 && duration < (m_maxDuration / 3) * 2)
-        {
-            //medium duration, yellow dot
-            Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_yellowDot)).placeholder(R.mipmap.ic_launcher).into(severity);
-        }
-        else
-        {
-            //long duration, red dot here
-            Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_redDot)).placeholder(R.mipmap.ic_launcher).into(severity);
-        }
-
 
         return itemView;
     }

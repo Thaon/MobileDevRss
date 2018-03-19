@@ -37,80 +37,77 @@ public class RssItem {
 
         if (matches.find())
         {
-            //we now differentiate between incidents and planned road works
-            if (type == WorkType.Incident)
-            {
-                m_description = matches.group(1);
+            //set up description regardless of work type
+            m_description = matches.group(1);
 
-                //now get the date
-                regex = "<pubDate>(.*?)</pubDate>";
-                pt = Pattern.compile(regex);
-                matches = pt.matcher(data);
-
-                if (matches.find())
-                {
-                    //remove the GMT
-                    regex = "(.*?) GMT";
-                    pt = Pattern.compile(regex);
-                    matches = pt.matcher(data);
-
-                    if (matches.find())
-                    {
-                        //parse into date
-                        String dateFormat = "EEE, d MMM yyyy HH:mm:ss"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
-                        SimpleDateFormat format  = new SimpleDateFormat(dateFormat, Locale.UK);
-                        try {
-                            m_startingDate = format.parse(matches.group(1));
-                        } catch (ParseException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-            else
-            {
+            if (type == WorkType.Planned) {
                 //extract dates and info
-                String fullDes = matches.group(1);
+                String fullDes = m_description;
                 String[] sections = fullDes.split("&lt;br /&gt;");
 
                 //dates: start date
-                regex = "Start Date: (.*?)";
-                pt = Pattern.compile(regex);
-                matches = pt.matcher(sections[0]); //start date
-                if (matches.find()) {
-                    m_startDate = matches.group(1);
-                    //get the actual date values
-                    String dateFormat = "EEE, dd MMMMM yyyy - HH:mm"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
-                    SimpleDateFormat format  = new SimpleDateFormat(dateFormat, Locale.UK);
-                    try {
-                        m_startingDate = format.parse(m_startDate); //get the date from the string
-                    } catch (ParseException e) {
-                        e.printStackTrace();
-                    }
+                m_startDate = sections[0].substring(12); //remove "Start Date: " from the string
+                //Log.e("Start Date", m_startDate);
+                //get the actual date values
+                String dateFormat = "EEEEE, dd MMMMM yyyy - HH:mm"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
+                SimpleDateFormat format = new SimpleDateFormat(dateFormat, Locale.UK);
+                try {
+                    m_startingDate = format.parse(m_startDate); //get the date from the string
+                } catch (ParseException e) {
+                    e.printStackTrace();
                 }
 
                 //dates: end date
-                regex = "End Date: (.*?)";
+                m_endDate = sections[1].substring(10); //remove "End Date: " from the string
+                //Log.e("End Date:", m_endDate);
+                //get the actual date values
+                String endDateFormat = "EEEEE, dd MMMMM yyyy - HH:mm"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
+                SimpleDateFormat endFormat = new SimpleDateFormat(endDateFormat, Locale.UK);
+                try {
+                    m_endingDate = endFormat.parse(m_endDate); //get the date from the string
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+
+                //description is just the last section for planned roadworks
+                if (sections.length > 2) {
+                    m_description = sections[2];
+                }
+                else {
+                    m_description = "No other details available.";
+                }
+            }
+        }
+
+        //we now check for the published date if we are checking incidents
+        if (type == WorkType.Incident)
+        {
+            //now get the date
+            regex = "<pubDate>(.*?)</pubDate>";
+            pt = Pattern.compile(regex);
+            matches = pt.matcher(data);
+
+            if (matches.find())
+            {
+                regex = "(.*?) GMT";
                 pt = Pattern.compile(regex);
-                matches = pt.matcher(sections[1]); //end date
-                if (matches.find()) {
-                    m_endDate = matches.group(1);
-                    //get the actual date values
-                    String dateFormat = "EEE, dd MMMMM yyyy - HH:mm"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
+                matches = pt.matcher(matches.group(1));
+
+                if (matches.find())
+                {
+                    m_startDate = matches.group(1);
+                    //remove the GMT
+                    Log.e("Pub Date:", m_startDate);
+
+                    //parse into date
+                    String dateFormat = "EEE, d MMM yyyy HH:mm:ss"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
                     SimpleDateFormat format  = new SimpleDateFormat(dateFormat, Locale.UK);
                     try {
-                        m_endingDate = format.parse(m_endDate); //get the date from the string
+                        m_startingDate = format.parse(m_startDate);
                     } catch (ParseException e) {
                         e.printStackTrace();
                     }
                 }
-
-                //description is just the last section
-                if (sections.length > 2)
-                    m_description = sections[2];
-                else
-                    m_description = "No other details available.";
-
             }
         }
     }
@@ -120,18 +117,26 @@ public class RssItem {
         //create date from data
         Date date = new GregorianCalendar(year, month, day).getTime();
 
-        return (date.before(m_endingDate) && date.after(m_startingDate));
+        if (m_type == WorkType.Planned)
+            return (date.before(m_endingDate) && date.after(m_startingDate));
+        else
+            return date.compareTo(m_startingDate) == 0; //if it is an incident we just check that it is on the same day
     }
 
     public int GetDurationInDays()
     {
+        int days = daysBetween(m_startingDate, m_endingDate);
+        Log.e("Duration", String.valueOf(days));
         return daysBetween(m_startingDate, m_endingDate);
     }
 
     public int daysBetween(Date d1, Date d2) //from: https://stackoverflow.com/questions/7103064/java-calculate-the-number-of-days-between-two-dates
     {
         if (d1 != null && d2 != null)
-            return (int)( (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+        {
+            int days = (int)( (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+            return days;
+        }
         return -1;
     }
 }

@@ -64,7 +64,8 @@ public class RssItemAdapter extends BaseAdapter {
         RssItem item = (RssItem) getItem(i);
         title.setText(item.m_title);
 
-        if (m_isIncident) {
+        //we only apply duration to planned roadworks
+        if (!m_isIncident) {
             //using the Picasso image library to load images on the background, this will not freeze the UI thread
             Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_roadWorksImg)).placeholder(R.mipmap.ic_launcher).into(icon);
 

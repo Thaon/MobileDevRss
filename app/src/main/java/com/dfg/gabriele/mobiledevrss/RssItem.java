@@ -6,6 +6,7 @@ import android.util.Log;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
@@ -37,6 +38,7 @@ public class RssItem {
 
         if (matches.find())
         {
+            m_type = type;
             //set up description regardless of work type
             m_description = matches.group(1);
 
@@ -96,9 +98,6 @@ public class RssItem {
                 if (matches.find())
                 {
                     m_startDate = matches.group(1);
-                    //remove the GMT
-                    Log.e("Pub Date:", m_startDate);
-
                     //parse into date
                     String dateFormat = "EEE, d MMM yyyy HH:mm:ss"; //from the table in: https://stackoverflow.com/questions/4772425/change-date-format-in-a-java-string
                     SimpleDateFormat format  = new SimpleDateFormat(dateFormat, Locale.UK);
@@ -115,19 +114,23 @@ public class RssItem {
     public boolean IsWithin(int day, int month, int year)
     {
         //create date from data
-        Date date = new GregorianCalendar(year, month, day).getTime();
+        Calendar date = new GregorianCalendar(year, month, day);
 
         if (m_type == WorkType.Planned)
-            return (date.before(m_endingDate) && date.after(m_startingDate));
+        {
+            //Log.e("is within", String.valueOf(date.getTime().before(m_endingDate) && date.getTime().after(m_startingDate)));
+            return (date.getTime().before(m_endingDate) && date.getTime().after(m_startingDate));
+        }
         else
-            return date.compareTo(m_startingDate) == 0; //if it is an incident we just check that it is on the same day
+        {
+            return (date.get(Calendar.YEAR) == Calendar.getInstance(Locale.UK).get(Calendar.YEAR) && date.get(Calendar.MONTH) == Calendar.getInstance(Locale.UK).get(Calendar.MONTH) && date.get(Calendar.DAY_OF_MONTH) == Calendar.getInstance(Locale.UK).get(Calendar.DAY_OF_MONTH)); //incidents are on the feed only for the current day
+        }
     }
 
     public int GetDurationInDays()
     {
         int days = daysBetween(m_startingDate, m_endingDate);
-        Log.e("Duration", String.valueOf(days));
-        return daysBetween(m_startingDate, m_endingDate);
+        return days;
     }
 
     public int daysBetween(Date d1, Date d2) //from: https://stackoverflow.com/questions/7103064/java-calculate-the-number-of-days-between-two-dates

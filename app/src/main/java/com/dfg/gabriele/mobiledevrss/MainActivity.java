@@ -24,6 +24,9 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
     //screen orientation data persistence
     private PersistentDataFragment m_pData;
     private int m_currentPage;
+    private RssItem m_currentItem;
+    private Date m_selectedDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,11 +126,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 //get item based on selection
-                RssItem selectedItem = m_items.get(position);
+                m_currentItem = m_items.get(position);
                 //set description, start and end date
-                m_descriptionText.setText(selectedItem.m_description);
-                m_startDateView.setText(selectedItem.m_startDate);
-                m_endDateView.setText(selectedItem.m_endDate);
+                m_descriptionText.setText(m_currentItem.m_description);
+                m_startDateView.setText(m_currentItem.m_startDate);
+                m_endDateView.setText(m_currentItem.m_endDate);
 
                 //flip to the details view
                 m_currentPage = 3;
@@ -139,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
     {
         m_currentPage = 1;
         m_flipper.setDisplayedChild(m_currentPage); //progress bar
+        m_dateSelected = false;
 
         new FeedGetter().execute((Void) null);
     }
@@ -157,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
         m_selYear = year;
         m_currentPage = 1;
         m_flipper.setDisplayedChild(m_currentPage); //progress bar
+
         new FeedGetter().execute((Void) null);
     }
 
@@ -179,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
             case 3: //back from the details view
                 m_currentPage = 2;
                 m_flipper.setDisplayedChild(m_currentPage); //go back to list view
+                FillItemsListView();
                 break;
 
             default: //in any other case we just close the application
@@ -187,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //take care of pausing, resuming and changing screen orientation
     @Override
     protected void onPause()
     {
@@ -201,7 +210,8 @@ public class MainActivity extends AppCompatActivity {
         else
         {
             //save the state of the app
-            m_pData.SaveData(m_currentPage, m_items);
+            m_selectedDate = new GregorianCalendar(m_selYear, m_selMonth, m_selDay).getTime();
+            m_pData.SaveData(m_currentPage, m_items, m_currentItem, m_dateSelected, m_selectedDate);
         }
     }
 
@@ -211,6 +221,11 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         m_currentPage = m_pData.GetPage();
+        m_dateSelected = m_pData.IsDateSelected();
+        m_selectedDate = m_pData.GetDate();
+        m_items = m_pData.GetCachedItems();
+        m_currentItem = m_pData.GetItem();
+
         m_flipper.setDisplayedChild(m_currentPage);
 
         if (m_currentPage == 1) //loading, we should probably abort and go back
@@ -220,8 +235,14 @@ public class MainActivity extends AppCompatActivity {
         }
         else if (m_currentPage == 2) //items view
         {
-            m_items = m_pData.GetCachedItems();
             FillItemsListView();
+        }
+        else if (m_currentPage == 3) //item details view
+        {
+            //set description, start and end date
+            m_descriptionText.setText(m_currentItem.m_description);
+            m_startDateView.setText(m_currentItem.m_startDate);
+            m_endDateView.setText(m_currentItem.m_endDate);
         }
     }
 
@@ -232,20 +253,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
     }
 
+    //takes care of filling up the custom list adapter with our Rss items
     private void FillItemsListView()
     {
         List<RssItem> relevantItems = new ArrayList<>();
-
-        int maxDuration = -1;
-        if (m_selectedFeed == RssItem.WorkType.Planned) //only calculate duration for planned roadworks
-        {
-            //calculate the biggest duration for the works
-            for (RssItem itm : m_items) {
-                if (itm.GetDurationInDays() > maxDuration) {
-                    maxDuration = itm.GetDurationInDays();
-                }
-            }
-        }
 
         //check if a date has been selected and proceed accordingly
         if (m_dateSelected)
@@ -255,16 +266,31 @@ public class MainActivity extends AppCompatActivity {
                 if (item.IsWithin(m_selDay, m_selMonth, m_selYear))
                     relevantItems.add(item);
             }
-
         }
         else //we don't have any specific date, fetch everything
         {
             relevantItems = m_items;
         }
 
+        int maxDuration = -1;
+        if (m_selectedFeed == RssItem.WorkType.Planned) //only calculate duration for planned roadworks
+        {
+            //calculate the biggest duration for the works
+            for (RssItem itm : relevantItems) { //we calculate the duration only on the relevant items to make the system relative to the selected sample size
+                if (itm.GetDurationInDays() > maxDuration) {
+                    maxDuration = itm.GetDurationInDays();
+                }
+            }
+        }
+
         //fill up results view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
         RssItemAdapter adapter = new RssItemAdapter(getBaseContext(), relevantItems, maxDuration); //check if are processing incidents, in that case pass -1 to the adapter
         m_resultsView.setAdapter(adapter);
+        //refresh the view when coming from the menu after the first time
+        //from: https://stackoverflow.com/questions/2250770/how-to-refresh-android-listview/21862750#21862750
+        adapter.notifyDataSetChanged();
+        m_resultsView.invalidateViews();
+        m_resultsView.refreshDrawableState();
     }
 
 //nested class to fetch the rss feed
@@ -306,7 +332,6 @@ public class MainActivity extends AppCompatActivity {
         {
             Log.e("Feed Getter", exception.toString());
         }
-
         return null;
     }
 
@@ -315,6 +340,8 @@ public class MainActivity extends AppCompatActivity {
     {
         m_currentPage = 2;
         m_flipper.setDisplayedChild(m_currentPage); //list view
+        if (m_items != null && !m_items.isEmpty())
+            m_items.clear();
         m_items = result;
         FillItemsListView();
     }

@@ -32,7 +32,7 @@ public class RssItemAdapter extends BaseAdapter {
         m_items = items;
         m_maxDuration = maxDuration;
         m_isIncident = m_maxDuration == -1;
-        Log.e("Max Duration", String.valueOf(m_maxDuration));
+        //Log.e("Max Duration", String.valueOf(m_maxDuration));
         m_inflater = (LayoutInflater) m_context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
@@ -81,6 +81,11 @@ public class RssItemAdapter extends BaseAdapter {
                 //long duration, red dot here
                 Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_redDot)).placeholder(R.mipmap.ic_launcher).into(severity);
             }
+        }
+        else
+        {
+            //load in the incident icon
+            Picasso.with(m_context).load(m_context.getResources().getString(R.string.str_incidentImg)).placeholder(R.mipmap.ic_launcher).into(icon);
         }
 
         return itemView;

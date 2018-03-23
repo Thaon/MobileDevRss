@@ -2,7 +2,9 @@
     <string name="app_name">MobileDevRss</string>
     <string name="str_incidents">https://trafficscotland.org/rss/feeds/currentincidents.aspx</string>
     <string name="str_planned">https://trafficscotland.org/rss/feeds/plannedroadworks.aspx</string>
-    <string name="str_roadWorksImg">https://cdn0.iconfinder.com/data/icons/trade-1-2/48/42-512.png</string>
+
+    <string name="str_roadWorksImg">https://cdn3.iconfinder.com/data/icons/road-construction-worker/274/roadwork-road-construction-worker-010-512.png</string>
+    <string name="str_incidentImg">https://www.xraytoolkit.com/Images/IncidentManager_Icon.png</string>
 
     <string name="str_greenDot">http://www.clker.com/cliparts/4/t/n/Q/b/d/green-glossy-icon-hi.png</string>
     <string name="str_yellowDot">http://www.pvhc.net/img220/wfklxtlvqgbfrirgzayu.png</string>

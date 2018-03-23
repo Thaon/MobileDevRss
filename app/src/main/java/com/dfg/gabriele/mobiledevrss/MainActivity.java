@@ -2,6 +2,8 @@
 
 package com.dfg.gabriele.mobiledevrss;
 
+import android.app.FragmentManager;
+import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
@@ -46,6 +48,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView m_startDateView;
     private TextView m_endDateView;
 
+    //screen orientation data persistence
+    private PersistentDataFragment m_pData;
+    private int m_currentPage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +58,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         m_items = new ArrayList<>();
+        m_currentPage = 0;
+
+        //setup data persistence between screen orientations
+        // find the retained fragment on activity restarts
+        FragmentManager fm = getFragmentManager();
+        m_pData = (PersistentDataFragment) fm.findFragmentByTag("PDATA");
+
+        //add our persistent data fragment to the fragment manager for future reference
+        if (m_pData == null) {
+            // add the fragment
+            m_pData = new PersistentDataFragment();
+            fm.beginTransaction().add(m_pData, "PDATA").commit();
+        }
 
         //cache all views
         m_flipper = findViewById(R.id.ViewFlipper);
@@ -110,7 +128,8 @@ public class MainActivity extends AppCompatActivity {
                 m_endDateView.setText(selectedItem.m_endDate);
 
                 //flip to the details view
-                m_flipper.setDisplayedChild(3); //details view
+                m_currentPage = 3;
+                m_flipper.setDisplayedChild(m_currentPage); //details view
             }
         });
     }
@@ -118,7 +137,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void FetchDataButtonPressed(View view)
     {
-        m_flipper.setDisplayedChild(1); //progress bar
+        m_currentPage = 1;
+        m_flipper.setDisplayedChild(m_currentPage); //progress bar
 
         new FeedGetter().execute((Void) null);
     }
@@ -135,7 +155,8 @@ public class MainActivity extends AppCompatActivity {
         m_selDay = day;
         m_selMonth = month;
         m_selYear = year;
-        m_flipper.setDisplayedChild(1); //progress bar
+        m_currentPage = 1;
+        m_flipper.setDisplayedChild(m_currentPage); //progress bar
         new FeedGetter().execute((Void) null);
     }
 
@@ -151,17 +172,99 @@ public class MainActivity extends AppCompatActivity {
                 break;
 
             case 2: //back from the list view
-                m_flipper.setDisplayedChild(0); //go back to menu
+                m_currentPage = 0;
+                m_flipper.setDisplayedChild(m_currentPage); //go back to menu
                 break;
 
             case 3: //back from the details view
-                m_flipper.setDisplayedChild(2); //go back to list view
+                m_currentPage = 2;
+                m_flipper.setDisplayedChild(m_currentPage); //go back to list view
                 break;
 
             default: //in any other case we just close the application
                 super.onBackPressed();
                 break;
         }
+    }
+
+    @Override
+    protected void onPause()
+    {
+        super.onPause();
+
+        if (isFinishing())
+        {
+            //we clean up the persistent data fragment from memory
+            FragmentManager fm = getFragmentManager();
+            fm.beginTransaction().remove(m_pData).commit();
+        }
+        else
+        {
+            //save the state of the app
+            m_pData.SaveData(m_currentPage, m_items);
+        }
+    }
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+
+        m_currentPage = m_pData.GetPage();
+        m_flipper.setDisplayedChild(m_currentPage);
+
+        if (m_currentPage == 1) //loading, we should probably abort and go back
+        {
+            m_currentPage = 0;
+            m_flipper.setDisplayedChild(m_currentPage);
+        }
+        else if (m_currentPage == 2) //items view
+        {
+            m_items = m_pData.GetCachedItems();
+            FillItemsListView();
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration conf)
+    {
+        super.onConfigurationChanged(conf);
+        setContentView(R.layout.activity_main);
+    }
+
+    private void FillItemsListView()
+    {
+        List<RssItem> relevantItems = new ArrayList<>();
+
+        int maxDuration = -1;
+        if (m_selectedFeed == RssItem.WorkType.Planned) //only calculate duration for planned roadworks
+        {
+            //calculate the biggest duration for the works
+            for (RssItem itm : m_items) {
+                if (itm.GetDurationInDays() > maxDuration) {
+                    maxDuration = itm.GetDurationInDays();
+                }
+            }
+        }
+
+        //check if a date has been selected and proceed accordingly
+        if (m_dateSelected)
+        {
+            for (RssItem item : m_items)
+            {
+                if (item.IsWithin(m_selDay, m_selMonth, m_selYear))
+                    relevantItems.add(item);
+            }
+
+        }
+        else //we don't have any specific date, fetch everything
+        {
+            relevantItems = m_items;
+        }
+
+        //fill up results view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
+        RssItemAdapter adapter = new RssItemAdapter(getBaseContext(), relevantItems, maxDuration); //check if are processing incidents, in that case pass -1 to the adapter
+        m_resultsView.setAdapter(adapter);
     }
 
 //nested class to fetch the rss feed
@@ -210,39 +313,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPostExecute(List<RssItem> result)
     {
-        m_flipper.setDisplayedChild(2); //list view
+        m_currentPage = 2;
+        m_flipper.setDisplayedChild(m_currentPage); //list view
         m_items = result;
-        List<RssItem> relevantItems = new ArrayList<>();
-
-        int maxDuration = -1;
-        if (m_selectedFeed == RssItem.WorkType.Planned) //only calculate duration for planned roadworks
-        {
-            //calculate the biggest duration for the works
-            for (RssItem itm : m_items) {
-                if (itm.GetDurationInDays() > maxDuration) {
-                    maxDuration = itm.GetDurationInDays();
-                }
-            }
-        }
-
-        //check if a date has been selected and proceed accordingly
-        if (m_dateSelected)
-        {
-            for (RssItem item : m_items)
-            {
-                if (item.IsWithin(m_selDay, m_selMonth, m_selYear))
-                    relevantItems.add(item);
-            }
-
-        }
-        else //we don't have any specific date, fetch everything
-        {
-            relevantItems = m_items;
-        }
-
-        //fill up results view with the items using an adapter, following tutorial from: https://www.raywenderlich.com/124438/android-listview-tutorial
-        RssItemAdapter adapter = new RssItemAdapter(getBaseContext(), relevantItems, maxDuration); //check if are processing incidents, in that case pass -1 to the adapter
-        m_resultsView.setAdapter(adapter);
+        FillItemsListView();
     }
 }
 }
